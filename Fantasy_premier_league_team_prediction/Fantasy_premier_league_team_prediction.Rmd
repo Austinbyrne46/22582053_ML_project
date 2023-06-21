@@ -3,7 +3,7 @@
 # Remove comments and add values where applicable.
 # The descriptions below should be self-explanatory
 
-title: "Helping You Write Academic Papers in R using Texevier"
+title: "Predicting the best fantasy premier league team to pick per gameweek"
 #subtitle: "This will appear as Right Header"
 
 documentclass: "elsarticle"
@@ -25,31 +25,31 @@ Thesis_FP: FALSE
 # --------- Front Page
 # Comment: ----- Follow this pattern for up to 5 authors
 AddTitle: TRUE # Use FALSE when submitting to peer reviewed platform. This will remove author names.
-Author1: "Jane Doe^[__Contributions:__  \\newline _The authors would like to thank no institution for money donated to this project. Thank you sincerely._]"  # First Author - note the thanks message displayed as an italic footnote of first page.
-Ref1: "Some Institution, Cape Town, South Africa" # First Author's Affiliation
-Email1: "nfkatzke\\@gmail.com" # First Author's Email address
+Author1: "Austin Byrne"  # First Author - note the thanks message displayed as an italic footnote of first page.
+Ref1: "Stellenbosch University, South Africa" # First Author's Affiliation
+Email1: "22582053\\@sun.ac.za" # First Author's Email address
 
-Author2: "John Smith"
-Ref2: "Some other Institution, Cape Town, South Africa"
-Email2: "John\\@gmail.com"
-CommonAffiliation_12: TRUE # If Author 1 and 2 have a common affiliation. Works with _13, _23, etc.
+#Author2: "John Smith"
+#Ref2: "Some other Institution, Cape Town, South Africa"
+#Email2: "John\\@gmail.com"
+#CommonAffiliation_12: TRUE # If Author 1 and 2 have a common affiliation. Works with _13, _23, etc.
 
-Author3: "John Doe"
-Email3: "Joe\\@gmail.com"
+#Author3: "John Doe"
+#Email3: "Joe\\@gmail.com"
 
-CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
+#CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
 
 # Comment out below to remove both. JEL Codes only given if keywords also given.
-keywords: "Multivariate GARCH \\sep Kalman Filter \\sep Copula" # Use \\sep to separate
-JELCodes: "L250 \\sep L100"
+#keywords: "Multivariate GARCH \\sep Kalman Filter \\sep Copula" # Use \\sep to separate
+#JELCodes: "L250 \\sep L100"
 
 # ----- Manage headers and footers:
 #BottomLFooter: $Title$
 #BottomCFooter:
 #TopLHeader: \leftmark # Adds section name at topleft. Remove comment to add it.
 BottomRFooter: "\\footnotesize Page \\thepage" # Add a '#' before this line to remove footer.
-addtoprule: TRUE
-addfootrule: TRUE               # Use if footers added. Add '#' to remove line.
+#addtoprule: TRUE
+#ddfootrule: TRUE               # Use if footers added. Add '#' to remove line.
 
 # --------- page margins:
 margin: 2.3 # Sides
@@ -74,7 +74,7 @@ csl: Tex/harvard-stellenbosch-university.csl # referencing format used.
 
 # ---------- General:
 RemovePreprintSubmittedTo: TRUE  # Removes the 'preprint submitted to...' at bottom of titlepage
-Journal: "Journal of Finance"   # Journal that the paper will be submitting to, if RemovePreprintSubmittedTo is set to TRUE.
+#Journal: "Journal of Finance"   # Journal that the paper will be submitting to, if RemovePreprintSubmittedTo is set to TRUE.
 toc: FALSE                       # Add a table of contents
 numbersections: TRUE             # Should sections (and thus figures and tables) be numbered?
 fontsize: 11pt                  # Set fontsize
@@ -106,13 +106,12 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 # These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
 
 # Lets load in example data, and see how this can be stored and later called from your 'data' folder.
-if(!require("tidyverse")) install.packages("tidyverse")
-library(tidyverse)
-Example_data <- Texevier::Ex_Dat
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2, rpart, caret, rpart.plot, 
+               vip, pdp, doParallel, foreach, tidyr,  
+               ipred, ranger, gbm, xgboost, AmesHousing, ggrepel, tidyverse, Metrics)
 
-# Notice that as you are working in a .Rproj file (I am assuming you are) - the relative paths of your directories start at your specified root.
-# This means that when working in a .Rproj file, you never need to use getwd() - it is assumed as your base root automatically.
-write_rds(Example_data, path = "data/Example_data.rds")
+list.files('C:/Users/austi/OneDrive/Desktop/Masters/Data Science/22582053_ML_project/Fantasy_premier_league_team_prediction/code', full.names = T, recursive = T) %>% as.list() %>% walk(~source(.))
 
 ```
 
@@ -123,272 +122,386 @@ write_rds(Example_data, path = "data/Example_data.rds")
 
 # Introduction \label{Introduction}
 
-References are to be made as follows: @fama1997[p. 33] and @grinold2000 Such authors could also be referenced in brackets [@grinold2000] and together [@fama1997 \& @grinold2000]. Source the reference code from scholar.google.com by clicking on ``cite'' below article name. Then select BibTeX at the bottom of the Cite window, and proceed to copy and paste this code into your ref.bib file, located in the directory's Tex folder. Open this file in Rstudio for ease of management, else open it in your preferred Tex environment. Add and manage your article details here for simplicity - once saved, it will self-adjust in your paper.
 
-> I suggest renaming the top line after \@article, as done in the template ref.bib file, to something more intuitive for you to remember. Do not change the rest of the code. Also, be mindful of the fact that bib references from google scholar may at times be incorrect. Reference Latex forums for correct bibtex notation.
+# Data exploration
 
-To reference a section, you have to set a label using ``\\label'' in R, and then reference it in-text as e.g. referencing a later section, Section \ref{Meth}.
+```{r include=FALSE}
+# Loading the data into R
+library(readr)
+merged_gameweek_2021_22 <- read_csv("C:/Users/austi/OneDrive/Desktop/Masters/Data Science/22582053_ML_project/data/merged gameweek 2021-22.csv")
 
-Writing in Rmarkdown is surprizingly easy - see [this website](https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf) cheatsheet for a summary on writing Rmd writing tips.
+merged_gameweek_2022_23 <- read_csv("C:/Users/austi/OneDrive/Desktop/Masters/Data Science/22582053_ML_project/data/merged gameweek 2022-23.csv")
+```
 
-# Data  {-}
+## Correlation plot between player attributes and total points
 
-Notice how I used the curly brackets and dash to remove the numbering of the data section.
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Player attributes correlation plot\\label{Figure1}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+player_correlation_plot <- create_player_correlation_plot(merged_gameweek_2021_22)
 
-Discussion of data should be thorough with a table of statistics and ideally a figure.
+player_correlation_plot
+```
 
-In your tempalte folder, you will find a Data and a Code folder. In order to keep your data files neat, store all of them in your Data folder. Also, I strongly suggest keeping this Rmd file for writing and executing commands, not writing out long pieces of data-wrangling. In the example below, I simply create a ggplot template for scatter plot consistency. I suggest keeping all your data in a data folder.
+The above \ref{Figure1} represents a correlation plot of player attributes for the purpose of identifying which player attributes have the biggest impact on total points earned by players. This is valuable information as we can then add these most prominent variables into our random forests model in an attempt to obtain accurate prediction results. 
 
-<!-- The following is a code chunk. It must have its own unique name (after the r), or no name. After the comma follows commands for R which are self-explanatory. By default, the code and messages will not be printed in your pdf, just the output: -->
+From \ref{Figure1} it is evident that a players influence score, ict_index, threat, selected, transfers in and creativity scores are positively correlated to the total points variable, which is the variable we are trying to predict. Thus, when building our random forests model these variables must be added. Furthermore, we must now look at the correlation between total points and team attributes. 
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+## Correlation plot between team attributes and individual player points
 
-  # This is just a random plot to show you a plot. This is done if the getwd() does not point to your Template's directory.
-  # Set WD below to your project's working directory.
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Team attributes correlation plot\\label{Figure2}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+team_correlation_plot <- create_team_correlation_plot(merged_gameweek_2021_22)
 
-  g <-
-  ggplot(data = mtcars) +
-  geom_point(aes(x = disp, y = hp, color = cyl)) +
-  theme_bw() +
-  # theme(legend.position = "none") +
-  theme(plot.title = element_text(size = 10)) +
-  theme(axis.title = element_text(size = 10),
-        axis.title.x = element_text()) +
-  labs(y = "y-axis", x = "x-axis", title = "Some amazing plot")
+team_correlation_plot
+```
 
-g
+\ref{Figure2} represents the correlation plot for team attributes such as whether the team is playing at home that game week, the team they are playing against and which game week it is for that specific match.As can be seen from \ref{Figure2} the team attributes actually don't have much of a correlation with the total points scored by players other than the slight correlation between the round and fixture with total points. However, this correlation seems so small that it will irrelevant to add into our model.  
+
+
+
+## Plotting the average points scored per position per gameweek: 
+
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Average points per position combined plot\\label{Figure3}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+
+average_points_per_position_combined_plot <- create_average_points_per_position_plot(merged_gameweek_2021_22)
+
+average_points_per_position_combined_plot
+```
+
+The above figure \ref{Figure3} provides some very valuable information on how many points are scored per position per game week throughout the 2021/22 premier league season. Each point on the above graph represents the average points scored for a position (either DEF which represents defenders, FWD which represents forwards, GK which represents goal keepers, or MID witch represents midfielders) for that particular game week. Some important takeaways can be found in this graph. 
+
+Goalkeepers on average seem to score the lowest points per game week, while strikers and defenders seem to have the highest variation and unpredictability. Midfielders seem to have on average the highest average points throughout the entire 2021/22 premier league season. In order to obtain i clearly picture of the distribution of points per postion the following figure will split the positions into their own respective plots. 
+
+## Now plotting the average points per postion on differetn axis and plotting the overall average points scored per postion. 
+
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Average points per postion individual plots\\label{Figure4}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+
+average_points_position_2021_22 <- aggregate(total_points ~ GW + position, data = merged_gameweek_2021_22, FUN = mean)
+
+average_points_per_position_plot <- create_average_points_with_horizontal_lines_plot(average_points_position_2021_22)
+
+average_points_per_position_plot
 
 ```
 
-To make your graphs look extra nice in latex world, you could use Tikz device. Replace dev - 'png' with 'tikz' in the chunk below. Notice this makes the build time longer and produces extra tex files - so if you are comfortable with this, set your device to Tikz and try it out:
+\ref{Figure4} provides a clearer picture of the distribution and confirms the takeaways made in response to \ref{Figure3}. \ref{Figure4} places each positions average point distribution throughout the 2021/22 season onto their own plot and places a horizontal line on the plot that represents the overall average for that position. It can be confirmed that goal keepers do in fact score on average the lowest points per game week, defenders and strikers have a higher variation and midfielders seem to be the best bet to obtain a better chance of receiving higher points throughout the season. 
 
-```{r Figure2, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure2}", fig.height = 3, fig.width = 6, dev = 'png'}
+The takeaway that can me made from the evidence of \ref{Figure3} and \ref{Figure4} is that you will want to have as many midfielders in your team as possible to take advantage of their higher average points and lower variance. 
 
-ExampleData <- read_rds( "data/Example_data.rds")
+Although some good analysis has been done on which attributes impact individual players total points the most and which positions score the most points, we have not yet taken into account how expensive these players are in these positions. This is a very important variable to evaluate due to the 100 mil cap on your fantasy team. This analysis will be conducted next. 
 
-source("code/Example_Plot_Scatter.R") # Load a function from your 'code' folder. This e.g. plots scatters to your own preferences.
-source( "code/Data_Create.R") #
 
-ExampleData <- Data_Create(N = 100) # Same as the ExampleData loaded above - this is just a function to create the stored data.
+## Scatter plot for points per value: 
 
-g <- Example_Plot_Scatter(DataInput = ExampleData,
-                          X = "Height_Score",
-                          Y = "Weight_Score",
-                          Z = "Agility_Score",
-                          Theme = theme_bw(), # run ?ggthemes for other themes.
-                          Title = "", # I prefer to use the caption set above.
-                          Ylab = "Height",
-                          Xlab = "Lenght",
-                          LegendTitle = "Agility",
-                          TitleSize = 10,
-                          LabSize = 10)
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Scatter plot of players points per value\\label{Figure5}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+most_valueable_players <- create_scatter_plot_with_top_players(merged_gameweek_2021_22, 3)
 
-g
+most_valueable_players
+```
 
-# Although the functions above are really simple, the principle is simple: containing calculations and data wrangling in their own functions will make this template much cleaner and more manageable.
-# When you start working, delete these meaningless functions and replace with your own...
+The above scatter plot \ref{Figure5} provides us with some more valuable insight. On the y axis we have the average total points per player and on the x axis we have the players value. Each point on this scatter plot provides us with the points per value statistic. In you you fantasy premier league team you will want players with high points per value ratios. In the plot it is visible that defenders are much cheaper than midfielders and forwards. Thus, getting some good cheap defenders in your team may be beneficial. Furthermore, this plot prints the names of the three players with the highest points per value ratios. These players are namely, Reece james (defender), Jack Harrison (midfielder) and Matt Doherty (defender). It is important to find players that are booth cheap and provide good points to your fantasy team. 
+
+Finally, lets evaluate if having a certain premier league team dominate your fantasy team is a viable option. This analysis will be done in the following figure. 
+
+
+## Min/mean and max points per team for a gameweek: 
+
+```{r warning =  FALSE, fig.align = 'center', fig.cap = "Team points min average and max distribution plot\\label{Figure6}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+team_points_distribution_plot <- create_team_points_distribution_plot(merged_gameweek_2021_22)
+
+team_points_distribution_plot
+```
+
+\ref{Figure6} provides insight into the minimum, average and maximum points scored per team in the premier league. From this figure it can be seen that you would rather want to avoid having players from Watford, Norwich and Everton due to their low average points and low maximum points. The teams that you should look to have players from are Man city, Liverpool and Chelsea. These team posses the highest average points and highest total points. Although the fantasy premier league restriction of a maximum of three players per team are allowed makes this difficult. This restriction ensures that we cannot flood our fantasy team with just Man city players or just Liverpool players. 
+
+## Conclusions made from data analysis 
+
+The important notes made form this data analysis is that, creativity, ict_index, influence, threat, selected and transfers in are important variables to place in the random forests model as they have explanatory power. Furthermore, when choosing your formation of your fantasy premier league team you should look to have as many midfielders as possible and look to obtain players from Man city, Liverpool or Chelsea. 
+
+# Machine learning model using Random forests
+
+## Setup process of machine learning model
+
+```{r include=FALSE}
+# Getting the value variable in my dataset into the correct fromat
+merged_gameweek_2021_22$value <- merged_gameweek_2021_22$value / 10
+
+merged_gameweek_2022_23$value <- merged_gameweek_2022_23$value / 10
+
+# Creating  a new data set that only contains variables that can be seen before the game starts
+predicter_variables_2021_22 <- c("creativity", "ict_index", "influence", "selected", "threat", "transfers_in", "total_points")
+
+# Subset the data frame to keep only the selected variables
+adapted_merged_gameweek_2021_22 <- merged_gameweek_2021_22[, predicter_variables_2021_22]
 
 ```
 
-To reference the plot above, add a ``\\label'' after the caption in the chunk heading, as done above. Then reference the plot as such: As can be seen, Figures \ref{Figure1}  and \ref{Figure2} are excellent, with Figure \ref{Figure2} being particularly aesthetically pleasing due to its device setting of Tikz. The nice thing now is that it correctly numbers all your figures (and sections or tables) and will update if it moves. The links are also dynamic.
+### Creating the base random forests model
 
-I very strongly suggest using ggplot2 (ideally in combination with dplyr) using the ggtheme package to change the themes of your figures.
+```{r}
+# The baseline model
+# Splittting the data into train and test sets
 
-Also note the information that I have placed above the chunks in the code chunks for the figures. You can edit any of these easily - visit the Rmarkdown webpage for more information.
-
-# Splitting a page
-
-You can also very easily split a page using built-in Pandoc formatting. I comment this out in the code (as this has caused issues building the pdf for some users - which I presume to be a Pandoc issue), but you are welcome to try it out yourself by commenting out the following section in your Rmd file.
-
-
-<!-- :::::: {.columns data-latex="[T]"} -->
-<!-- ::: {.column data-latex="{0.7\textwidth}"} -->
-<!-- ```{r, echo=FALSE, fig.width=4, fig.height=4} -->
-<!-- par(mar = c(4, 4, .2, .1)) -->
-<!-- plot(cars, pch = 19) -->
-<!-- ``` -->
-<!-- ::: -->
-<!-- ::: {.column data-latex="{0.05\textwidth}"} -->
-<!-- \ -->
-<!-- ::: -->
-<!-- ::: {.column data-latex="{0.2\textwidth}"} -->
-<!-- \scriptsize -->
-
-<!-- ## Data {-} -->
-<!-- The figure on the left-hand side shows the `cars` data. -->
-
-<!-- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do -->
-<!-- eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut -->
-<!-- enim ad minim veniam, quis nostrud exercitation ullamco laboris -->
-<!-- nisi ut aliquip ex ea commodo consequat. -->
-<!-- ::: -->
-<!-- :::::: -->
-
-
-
-#  Methodology \label{Meth}
-
-## Subsection
-Ideally do not overuse subsections. It equates to bad writing.^[This is an example of a footnote by the way. Something that should also not be overused.]
-
-## Math section
-
-Equations should be written as such:
-
-\begin{align}
-\beta = \sum_{i = 1}^{\infty}\frac{\alpha^2}{\sigma_{t-1}^2} \label{eq1} \\
-\int_{x = 1}^{\infty}x_{i} = 1 \notag
-\end{align}
-
-If you would like to see the equations as you type in Rmarkdown, use $ symbols instead (see this for yourself by adjusted the equation):
-
-$$
-\beta = \sum_{i = 1}^{\infty}\frac{\alpha^2}{\sigma_{t-1}^2} \\
-\int_{x = 1}^{\infty}x_{i} = 1
-$$
-
-Note the equation above - this should appear in math in Rstudio. Writing nice math requires practice. Note I used a forward slashes to make a space in the equations. I can also align equations using  __\&__, and set to numbering only the first line. Now I will have to type ``begin equation'' which is a native \LaTeX command. Here follows a more complicated equation that you want aligned (using \& sign) and numbered:
-
-
-\begin{align}
-	y_t &= c + B(L) y_{t-1} + e_t   \label{eq2}    \\ \notag
-	e_t &= H_t^{1/2}  z_t ; \quad z_t \sim  N(0,I_N) \quad \& \quad H_t = D_tR_tD_t \\ \notag
-		D_t^2 &= {\sigma_{1,t}, \dots, \sigma_{N,t}}   \\ \notag
-		\sigma_{i,t}^2 &= \gamma_i+\kappa_{i,t}  v_{i, t-1}^2 +\eta_i  \sigma_{i, t-1}^2, \quad \forall i \\ \notag
-		R_{t, i, j} &= {diag(Q_{t, i, j}}^{-1}) . Q_{t, i, j} . diag(Q_{t, i, j}^{-1})  \\ \notag
-		Q_{t, i, j} &= (1-\alpha-\beta)  \bar{Q} + \alpha  z_t  z_t'  + \beta  Q_{t, i, j} \notag
-\end{align}
-
-Note that in \ref{eq2} I have aligned the equations by the equal signs. I also want only one tag, and I create spaces using ``quads''.
-
-See if you can figure out how to do complex math using the two examples provided in \ref{eq1} and \ref{eq2}.
-
-<!-- $$ -->
-<!-- This is a commented out section in the writing part. -->
-<!-- Comments are created by highlighting text, amnd pressing CTL+C -->
-<!-- \\begin{align} -->
-<!-- \\beta = \\alpha^2 -->
-<!-- \end{align} -->
-<!-- $$ -->
-
-# Results
-
-Tables can be included as follows. Use the _xtable_ (or kable) package for tables. Table placement = H implies Latex tries to place the table Here, and not on a new page (there are, however, very many ways to skin this cat. Luckily there are many forums online!).
-
-
-```{r ShortTable, results = 'asis'}
-
-library(xtable)
-data <- mtcars[1:5,] %>% tibble::as_tibble()
-
-table <- xtable(data, caption = "Short Table Example \\label{tab1}")
-  print.xtable(table,
-             # tabular.environment = "longtable",
-             floating = TRUE,
-             table.placement = 'H',
-             # scalebox = 0.3,
-             comment = FALSE,
-             caption.placement = 'bottom'
-             )
-
+library(rsample)
+set.seed(123)
+split <- rsample::initial_split(adapted_merged_gameweek_2021_22, prop = 0.7, 
+                       strata = "total_points")
+twenty21_train  <- training(split)
+twenty21_test   <- testing(split)
 ```
 
-To reference calculations __in text__, _do this:_ From table \ref{tab1} we see the average value of mpg is `r mean(mtcars[1:5,]$mpg)`.
+```{r}
+set.seed(123)
 
-Including tables that span across pages, use the following (note that I add below the table: ``continue on the next page''). This is a neat way of splitting your table across a page.
+ctrl <- trainControl(method="repeatedcv", 
+                     number=5, 
+                     repeats = 3)
 
-Use the following default settings to build your own possibly long tables. Note that the following will fit on one page if it can, but cleanly spreads over multiple pages:
-
-```{r LongTable, results = 'asis'}
-
-library(xtable)
-
-data = mtcars %>% tibble::as_tibble()
-  addtorow          <- list()
-  addtorow$pos      <- list()
-  addtorow$pos[[1]] <- c(0)
-  addtorow$command  <- c(paste("\\hline \n",
-                               "\\endhead \n",
-                               "\\hline \n",
-                               "{\\footnotesize Continued on next page} \n",
-                               "\\endfoot \n",
-                               "\\endlastfoot \n",sep=""))
-table <- xtable(data, caption = "Long Table Example")
-  print.xtable(table,
-             tabular.environment = "longtable",
-             floating = FALSE, # Leave this as is.
-             table.placement = 'H', # Leave this as is.
-             booktabs = T, # Aesthetics
-             include.rownames = FALSE,  # Typically you don't want this in a table.
-             add.to.row = addtorow, # For adding the Continued on next page part...
-             comment = FALSE,
-             caption.placement = 'top',  # Where do you want the caption?
-             size="\\fontsize{12pt}{13pt}\\selectfont"  # Size of text in table..
-             )
-# See https://cran.r-project.org/web/packages/xtable/vignettes/xtableGallery.pdf for table inspiration
+# number of features
+n_features <- length(setdiff(names(twenty21_train), "total_points"))
 ```
 
-\hfill
+```{r}
+# Now we start the modeling
 
-<!-- hfill can be used to create a space, like here between text and table. -->
-
-
-## Huxtable
-
-Huxtable is a very nice package for making working with tables between Rmarkdown and Tex easier.
-
-This cost some adjustment to the Tex templates to make it work, but it now works nicely.
-
-See documentation for this package [here](https://hughjonesd.github.io/huxtable/huxtable.html). A particularly nice addition of this package is for making the printing of regression results a joy (see [here](https://hughjonesd.github.io/huxtable/huxtable.html#creating-a-regression-table)). Here follows an example:
+fpl_2021_22_forest <- train(total_points~., twenty21_train, method="rf", trControl= ctrl, ntree = 50)
 
 
-If you are eager to use huxtable, comment out the Huxtable table in the Rmd template, and uncomment the colortbl package in your Rmd's root.
+fpl_2021_22_prediction_test <- predict(fpl_2021_22_forest, twenty21_test)
+fpl_2021_22_prediction_train <- predict(fpl_2021_22_forest, twenty21_train)
+```
 
-Note that I do not include this in the ordinary template, as some latex users have complained it breaks when they build their Rmds (especially those using tidytex - I don't have this problem as I have the full Miktex installed on mine). Up to you, but I strongly recommend installing the package manually and using huxtable. To make this work, uncomment the _Adding additional latex packages_ part in yaml at the top of the Rmd file. Then comment out the huxtable example in the template below this line. Reknit, and enjoy.
+### Evaluating the performance of the base line model
 
-```{r, results = 'asis'}
+```{r}
+yardstick::mae_vec(truth = twenty21_train$total_points, estimate = fpl_2021_22_prediction_train)
 
-if(!require(huxtable)) install.packages(huxtable)
-library(huxtable)
-data(diamonds, package = 'ggplot2')
-Title <- "Regression Output"
-Label <- "Reg01"
-lm1 <- lm(price ~ carat, diamonds)
-lm2 <- lm(price ~ depth, diamonds)
-lm3 <- lm(price ~ carat + depth, diamonds)
-htab <-
-huxreg(lm1, lm2, lm3,
-                statistics = c(N = "nobs", R2 = "r.squared"),
-                note = "%stars%.") %>%
-  set_caption(Title) %>%
-  set_label(Label)
-# More settings:
-font_size(htab) <- 12
-# Let's change regression names: this is slightly hacky, but works. Comment out this section to see what the default looks like:
-  Names <- c( "Reg1", "Reg2", "Reg3")
-  for(i in 1:length(Names)) {
-    htab[1,][[1+i]] <- Names[i]
+yardstick::mae_vec(truth =  twenty21_test$total_points, estimate = fpl_2021_22_prediction_test)
+```
+
+
+## Hyper parameter tuning 
+
+### mtry hyper parameter tuning
+
+```{r}
+library(caret)
+
+
+# Create train control object for repeated cross-validation
+ctrl <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 3)
+
+# Define the tuning grid for mtry
+tuning_grid <- expand.grid(mtry = c(1, 2, 3, 4, 5))
+
+# Perform hyperparameter tuning using the train function
+fpl_2021_22_tuned <- train(total_points ~ .,
+                           data = twenty21_train,
+                           method = "rf",
+                           trControl = ctrl,
+                           tuneGrid = tuning_grid,
+                           ntree = 50)
+
+# Obtain the optimal mtry value
+optimal_mtry <- fpl_2021_22_tuned$bestTune$mtry
+
+# Train the random forest model with the optimal mtry value
+final_model <- randomForest::randomForest(total_points ~ .,
+                                          data = twenty21_train,
+                                          mtry = optimal_mtry,
+                                          ntree = 50)
+
+# Make predictions on the test set
+fpl_2021_22_prediction_test <- predict(final_model, twenty21_test)
+
+# Load the required library
+library(Metrics)
+
+# Calculate mean absolute error (MAE)
+mae <- mae(twenty21_test$total_points, fpl_2021_22_prediction_test)
+
+# Shows that mtry = 2 is the best
+```
+
+### k-fold Hyper parameter tuning
+
+```{r}
+library(caret)
+
+# Define the range of folds to test
+fold_range <- c(5, 10, 15, 20)
+
+# Initialize vectors to store results
+mae_values <- numeric(length(fold_range))
+
+# Iterate over each fold value
+for (i in 1:length(fold_range)) {
+  # Create train control object with the current fold value
+  ctrl <- trainControl(method = "cv",
+                       number = fold_range[i])
+  
+  # Train the model and perform cross-validation
+  model <- train(total_points ~ .,
+                 data = twenty21_train,
+                 method = "rf",
+                 trControl = ctrl,
+                 tuneLength = 1)
+  
+  # Make predictions on the test set
+  predictions <- predict(model, twenty21_test)
+  
+  # Calculate mean absolute error (MAE)
+  mae_values[i] <- mean(abs(twenty21_test$total_points - predictions))
+}
+
+# Find the fold value with the lowest MAE
+optimal_fold <- fold_range[which.min(mae_values)]
+
+
+# Shows that k = 5 is the best 
+```
+
+# ntree hyper parameter tuning 
+
+```{r}
+# Create train control object for repeated cross-validation
+ctrl <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 3)
+
+# Define the tuning grid for mtry
+tuning_grid <- expand.grid(mtry = c(1, 2, 3, 4, 5))
+
+# Initialize variables to store the best performance
+best_mae <- Inf
+best_ntree <- 0
+
+# Loop over ntree values
+for (ntree in c(50, 100, 150)) {
+  # Perform hyperparameter tuning using the train function
+  fpl_2021_22_tuned <- train(total_points ~ .,
+                             data = twenty21_train,
+                             method = "rf",
+                             trControl = ctrl,
+                             tuneGrid = tuning_grid,
+                             ntree = ntree)
+  
+  # Obtain the optimal mtry value
+  optimal_mtry <- fpl_2021_22_tuned$bestTune$mtry
+  
+  # Train the random forest model with the optimal mtry and ntree values
+  final_model <- randomForest::randomForest(total_points ~ .,
+                                            data = twenty21_train,
+                                            mtry = optimal_mtry,
+                                            ntree = ntree)
+  
+  # Make predictions on the test set
+  fpl_2021_22_prediction_test <- predict(final_model, twenty21_test)
+  
+  # Calculate mean absolute error (MAE)
+  mae_values[i] <- mean(abs(twenty21_test$total_points - predictions))
+  
+  # Check if this model has the best performance so far
+  if (mae < best_mae) {
+    best_mae <- mae
+    best_ntree <- ntree
   }
-# Now simply call the table:
-htab
+}
+
+
+# Shows that n_tree = 150 is best 
 
 ```
 
-FYI - R also recently introduced the gt package, which is worthwhile exploring too.
+## Best model after hyper parameter tuning
 
-# Lists
+```{r}
+set.seed(123)
 
-To add lists, simply using the following notation
+ctrl <- trainControl(method="repeatedcv", 
+                     number=5, 
+                     repeats = 3)
 
-* This is really simple
 
-    + Just note the spaces here - writing in R you have to sometimes be pedantic about spaces...
+fpl_2021_22_forest_tuned<- train(total_points~., twenty21_train, method="rf", trControl= ctrl, ntree = 150)
 
-* Note that Rmarkdown notation removes the pain of defining \LaTeX environments!
+
+fpl_2021_22_prediction_test_tuned <- predict(fpl_2021_22_forest_tuned, twenty21_test)
+fpl_2021_22_prediction_train_tuned <- predict(fpl_2021_22_forest_tuned, twenty21_train)
+
+```
+
+## Evaluating the performance of the tuned model
+
+```{r}
+yardstick::mae_vec(truth = twenty21_train$total_points, estimate = fpl_2021_22_prediction_train_tuned)
+
+yardstick::mae_vec(truth =  twenty21_test$total_points, estimate = fpl_2021_22_prediction_test_tuned)
+```
+
+# Time for predictions
+
+## Preparing the 2022/23 data set to be ready for prediction 
+(Here i must explain what I am doing in the code below)
+
+```{r}
+# Preparing my 2022/23 data set so it is ready for predictions 
+#Creating  a new data set that only contains variables that can be seen before the game starts
+
+predicter_variables_2022_23 <- c("creativity", "ict_index", "influence", "selected", "threat", "transfers_in", "total_points", "team")
+
+# Subset the data frame to keep only the selected variables
+twenty22_test <- merged_gameweek_2022_23[, predicter_variables_2022_23]
+
+# Create a vector of the team names to be removed
+teams_to_remove <- c("Bournemouth", "Nott'm Forest", "Fulham")
+
+# Remove the rows with the teams to be removed from twenty22_test
+twenty22_test <- twenty22_test[!twenty22_test$team %in% teams_to_remove, ]
+
+#remove these teams from the original dataset as well
+merged_gameweek_2022_23 <- merged_gameweek_2022_23[!merged_gameweek_2022_23$team %in% teams_to_remove, ]
+
+# Step 3: Make predictions using the trained random forest model
+predictions <- predict(fpl_2021_22_forest_tuned, newdata = twenty22_test)
+
+# make a vector with the names: 
+names_22_23 <- merged_gameweek_2022_23$name
+
+#add names back to the twenty22_test dataset 
+twenty22_test$names_22_23 <- names_22_23
+
+# Add the predictions to the twenty22_test dataset
+twenty22_test$predicted_points <- predictions
+
+# Make a vector with game week 
+gameweek <- merged_gameweek_2022_23$GW
+
+# Add the gameweek back into the data set
+twenty22_test$gameweek <- gameweek
+
+# make a vector with the position 
+position <- merged_gameweek_2022_23$position
+
+# add the position back into the data set
+twenty22_test$position <- position
+
+# make a vector with value 
+value <- merged_gameweek_2022_23$value
+
+# add the value vector back into the data set
+twenty22_test$value <- value
+```
+
+## Game week predictions 
+
+
+
+
+
+
 
 # Conclusion
-
-I hope you find this template useful. Remember, stackoverflow is your friend - use it to find answers to questions. Feel free to write me a mail if you have any questions regarding the use of this package. To cite this package, simply type citation("Texevier") in Rstudio to get the citation for @Texevier (Note that uncited references in your bibtex file will not be included in References).
 
 <!-- Make title of bibliography here: -->
 <!-- \newpage -->
