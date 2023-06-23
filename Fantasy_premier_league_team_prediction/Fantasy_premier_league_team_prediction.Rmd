@@ -3,7 +3,7 @@
 # Remove comments and add values where applicable.
 # The descriptions below should be self-explanatory
 
-title: "Predicting the best fantasy premier league team to pick per gameweek"
+title: "Predicting the best 2022/23 fantasy premier league team per game week"
 #subtitle: "This will appear as Right Header"
 
 documentclass: "elsarticle"
@@ -75,7 +75,7 @@ csl: Tex/harvard-stellenbosch-university.csl # referencing format used.
 # ---------- General:
 RemovePreprintSubmittedTo: TRUE  # Removes the 'preprint submitted to...' at bottom of titlepage
 #Journal: "Journal of Finance"   # Journal that the paper will be submitting to, if RemovePreprintSubmittedTo is set to TRUE.
-toc: FALSE                       # Add a table of contents
+toc: TRUE                       # Add a table of contents
 numbersections: TRUE             # Should sections (and thus figures and tables) be numbered?
 fontsize: 11pt                  # Set fontsize
 linestretch: 1.2                # Set distance between lines.
@@ -92,7 +92,7 @@ output:
     fig_width: 3.5 # Adjust default figure sizes. This can also be done in the chunks of the text.
     fig_height: 3.5
 abstract: |
-  Abstract to be written here. The abstract should not be too long and should provide the reader with a good understanding what you are writing about. Academic papers are not like novels where you keep the reader in suspense. To be effective in getting others to read your paper, be as open and concise about your findings here as possible. Ideally, upon reading your abstract, the reader should feel he / she must read your paper in entirety.
+  This project aims to predict the best possible fantasy premier league 11 for each game week of the 2022/23 premier league season. The machine learning model that will be used is a random forests model. To perfect the model, hyper parameter tuning will be conducted to obatain the optimal parameter values. 
 ---
 
 <!-- First: Set your default preferences for chunk options: -->
@@ -122,8 +122,17 @@ list.files('C:/Users/austi/OneDrive/Desktop/Masters/Data Science/22582053_ML_pro
 
 # Introduction \label{Introduction}
 
+The aim of this project is to create predictions on how many fantasy premier league points premier league players will score for each game week. Using these predictions I will be able to select the best fantasy premier league team which consists of 11 players. The fantasy premier league team restrictions make this more difficult than just selecting the top 11 players with the highest predicted points in a game week. The restrictions consist of only being allowed to have a maximum of 3 players from the same premier league team, your fantasy premier league team can not have a combined total value that exceeds 100 million and your team has too stick to certain formations which constrains the amount of players you can have in each position. 
+
+The machine learning model that will be used for these predictions is a random forests model. The layout of the project consists of data analysis section. Next, a base line random forests model will be created and evaluated by calculating the mean absolute error. Next using hyper parameter tuning the optimal values for the mtry, k-fold and ntree parameter values will be found. Next a new, tuned random forests model will be created and it's model performance will also be evaluated via the mean absolute error. Next, the best model will be used to create predictions on the amount of points that will be scored by each player in the 2022/23 premier league season. From these predictions a function will be created and used that will select the best fantasy premier league team to select per game week for the 2022/23 premier league season given the fantasy team restrictions.
 
 # Data exploration
+
+The data sets used 
+
+The data used for this project are two data sets one for the 2021/22 premier league season and another for the 2022/23 premier league season. The data used is from the github of vaastav/Fantasy-Premier-League. The data consists of variables such as the name of each player in the premier league for that season, which team they play for, which position they play in, each players individual creativity scores, threat scores, how many goals they scored, how many goals they conceded, the game week, value etc. 
+
+The 2021/22 data set will be used to train and test the model and the predictions will be made on the 2022/23 data set. 
 
 ```{r include=FALSE}
 # Loading the data into R
@@ -141,9 +150,9 @@ player_correlation_plot <- create_player_correlation_plot(merged_gameweek_2021_2
 player_correlation_plot
 ```
 
-The above \ref{Figure1} represents a correlation plot of player attributes for the purpose of identifying which player attributes have the biggest impact on total points earned by players. This is valuable information as we can then add these most prominent variables into our random forests model in an attempt to obtain accurate prediction results. 
+The above \ref{Figure1} represents a correlation plot of player attributes for the 2021/22 premier league season for the purpose of identifying which player attributes have the biggest impact on total points earned by players. This is valuable information as we can then add these most prominent variables into our random forests model as features in an attempt to obtain accurate prediction results. It is important to understand that only variables that can be obtained before a game week must be evaluated.
 
-From \ref{Figure1} it is evident that a players influence score, ict_index, threat, selected, transfers in and creativity scores are positively correlated to the total points variable, which is the variable we are trying to predict. Thus, when building our random forests model these variables must be added. Furthermore, we must now look at the correlation between total points and team attributes. 
+From \ref{Figure1} it is evident that a players influence score, ict_index, threat, selected, transfers in and creativity scores are positively correlated to the total points variable, which is the variable we are trying to predict (the target variable). Thus, when building our random forests model these variables must be added. Furthermore, we must now look at the correlation between total points and team attributes. 
 
 ## Correlation plot between team attributes and individual player points
 
@@ -153,7 +162,7 @@ team_correlation_plot <- create_team_correlation_plot(merged_gameweek_2021_22)
 team_correlation_plot
 ```
 
-\ref{Figure2} represents the correlation plot for team attributes such as whether the team is playing at home that game week, the team they are playing against and which game week it is for that specific match.As can be seen from \ref{Figure2} the team attributes actually don't have much of a correlation with the total points scored by players other than the slight correlation between the round and fixture with total points. However, this correlation seems so small that it will irrelevant to add into our model.  
+\ref{Figure2} represents the correlation plot for team attributes for the 2021/22 season such as whether the team is playing at home that game week, the team they are playing against and which game week it is for that specific match.As can be seen from \ref{Figure2} the team attributes actually don't have much of a correlation with the total points scored by players other than the slight correlation between the round and fixture with total points. However, this correlation seems so small that it will irrelevant to add into our model.  
 
 
 
@@ -168,7 +177,7 @@ average_points_per_position_combined_plot
 
 The above figure \ref{Figure3} provides some very valuable information on how many points are scored per position per game week throughout the 2021/22 premier league season. Each point on the above graph represents the average points scored for a position (either DEF which represents defenders, FWD which represents forwards, GK which represents goal keepers, or MID witch represents midfielders) for that particular game week. Some important takeaways can be found in this graph. 
 
-Goalkeepers on average seem to score the lowest points per game week, while strikers and defenders seem to have the highest variation and unpredictability. Midfielders seem to have on average the highest average points throughout the entire 2021/22 premier league season. In order to obtain i clearly picture of the distribution of points per postion the following figure will split the positions into their own respective plots. 
+Goalkeepers on average seem to score the lowest points per game week, while strikers and defenders seem to have the highest variation and unpredictability. Midfielders seem to have on average the highest average points throughout the entire 2021/22 premier league season with the lowest variation. In order to obtain a clearer picture of the distribution of points per position the following figure will split the positions into their own respective plots. 
 
 ## Now plotting the average points per postion on differetn axis and plotting the overall average points scored per postion. 
 
@@ -182,11 +191,11 @@ average_points_per_position_plot
 
 ```
 
-\ref{Figure4} provides a clearer picture of the distribution and confirms the takeaways made in response to \ref{Figure3}. \ref{Figure4} places each positions average point distribution throughout the 2021/22 season onto their own plot and places a horizontal line on the plot that represents the overall average for that position. It can be confirmed that goal keepers do in fact score on average the lowest points per game week, defenders and strikers have a higher variation and midfielders seem to be the best bet to obtain a better chance of receiving higher points throughout the season. 
+\ref{Figure4} provides a clearer picture of the distribution and confirms the takeaways made in response to \ref{Figure3}. \ref{Figure4} places each positions average point distribution throughout the 2021/22 season onto their own plot but with the same axis and places a horizontal line on the plot that represents the overall average for that position. It can be confirmed that goal keepers do in fact score on average the lowest points per game week, defenders and strikers have a higher variation and midfielders seem to be the best bet to obtain a higher probability of receiving higher points throughout the season. 
 
 The takeaway that can me made from the evidence of \ref{Figure3} and \ref{Figure4} is that you will want to have as many midfielders in your team as possible to take advantage of their higher average points and lower variance. 
 
-Although some good analysis has been done on which attributes impact individual players total points the most and which positions score the most points, we have not yet taken into account how expensive these players are in these positions. This is a very important variable to evaluate due to the 100 mil cap on your fantasy team. This analysis will be conducted next. 
+Next lets look at the most valuable players.  
 
 
 ## Scatter plot for points per value: 
@@ -197,9 +206,11 @@ most_valueable_players <- create_scatter_plot_with_top_players(merged_gameweek_2
 most_valueable_players
 ```
 
-The above scatter plot \ref{Figure5} provides us with some more valuable insight. On the y axis we have the average total points per player and on the x axis we have the players value. Each point on this scatter plot provides us with the points per value statistic. In you you fantasy premier league team you will want players with high points per value ratios. In the plot it is visible that defenders are much cheaper than midfielders and forwards. Thus, getting some good cheap defenders in your team may be beneficial. Furthermore, this plot prints the names of the three players with the highest points per value ratios. These players are namely, Reece james (defender), Jack Harrison (midfielder) and Matt Doherty (defender). It is important to find players that are booth cheap and provide good points to your fantasy team. 
+The above scatter plot \ref{Figure5} provides us with some more valuable insight. On the y axis we have the average total points per player and on the x axis we have the players value. Each point on this scatter plot provides us with the points per value statistic. In your fantasy premier league team you will want players with high points per value ratios. In the plot it is visible that defenders are much cheaper than midfielders and forwards. Thus, getting some good cheap defenders in your team may be beneficial.
 
-Finally, lets evaluate if having a certain premier league team dominate your fantasy team is a viable option. This analysis will be done in the following figure. 
+Furthermore, this plot prints the names of the three players with the highest points per value ratios. These players are namely, Reece james (defender), Jack Harrison (midfielder) and Matt Doherty (defender). It is important to find players that are both cheap and provide good points to your fantasy team. 
+
+Finally, lets evaluate whether having a certain premier league team dominate your fantasy team is a viable option. This analysis will be done in the following figure. 
 
 
 ## Min/mean and max points per team for a gameweek: 
@@ -210,15 +221,23 @@ team_points_distribution_plot <- create_team_points_distribution_plot(merged_gam
 team_points_distribution_plot
 ```
 
-\ref{Figure6} provides insight into the minimum, average and maximum points scored per team in the premier league. From this figure it can be seen that you would rather want to avoid having players from Watford, Norwich and Everton due to their low average points and low maximum points. The teams that you should look to have players from are Man city, Liverpool and Chelsea. These team posses the highest average points and highest total points. Although the fantasy premier league restriction of a maximum of three players per team are allowed makes this difficult. This restriction ensures that we cannot flood our fantasy team with just Man city players or just Liverpool players. 
+\ref{Figure6} provides insight into the minimum, average and maximum points scored by premier league players per team in the premier league. From this figure it can be seen that you would rather want to avoid having players from Watford, Norwich and Everton due to their low average points and low maximum points. The teams that you should look to have players from are Man city, Liverpool and Chelsea. These teams posses the highest average points and highest total points. Although the fantasy premier league restriction of a maximum of three players per team are allowed makes this difficult. This restriction ensures that we cannot flood our fantasy team with just Man city players or just Liverpool players. There may however  be a case to look to obtain players from Wolves, Newcastle, Burnley, Southampton and Leicester due to lower overall range in points, If you are a fantasy premier league player that values lower risk which is found in lower point variation, these teams may suit your risk profile. 
 
 ## Conclusions made from data analysis 
 
-The important notes made form this data analysis is that, creativity, ict_index, influence, threat, selected and transfers in are important variables to place in the random forests model as they have explanatory power. Furthermore, when choosing your formation of your fantasy premier league team you should look to have as many midfielders as possible and look to obtain players from Man city, Liverpool or Chelsea. 
+The important notes made form this data analysis is that, creativity, ict_index, influence, threat, selected and transfers in are important variables to place in the random forests model as they have explanatory power over the total points variable. Furthermore, when choosing your formation of your fantasy premier league team you should look to have as many midfielders as possible and look to obtain players from Man city, Liverpool or Chelsea. 
 
 # Machine learning model using Random forests
 
+The machine learning model that has been selected for predicting the amount of fantasy points premier league players will score is the random forests model. The reasoning behind this choice is the ability of a random forest model to handle large data sets, reduced risk of over fitting, the results are robust to noise and outliers @breiman2001random. 
+
+Handling large data sets is important for this project due to the sheer amount of information available. There are 38 game weeks with over 500 premier league players. Secondly, reduced risk of over fitting is essential for this project as we are predicting the amount of points scored by premier league players over different game weeks. Lastly, it is critical that the model used is robust to outliers since outliers will be very prevalent in the premier league data sets due to shock player performances. 
+
+This next section will now walk through the setting up process of the random forests machine learning model. 
+
 ## Setup process of machine learning model
+
+Firstly, before we begin creating the base line random forests model we need to preprocess the data to ensure the variables are in the correct format. Upon analyzing the variables in the first section it was found that the "value" variable did not read into R correctly and needs to be divided by 10. Next a new data set was created that only obtains the feature variables that will be used, these variables are, "creativity", "ict_index", "influence", "selected", "threat", "transfers_in" and also contains the target variable "total_points". These feature variables were chosen through the analyses done in the data analysis section.
 
 ```{r include=FALSE}
 # Getting the value variable in my dataset into the correct fromat
@@ -229,12 +248,15 @@ merged_gameweek_2022_23$value <- merged_gameweek_2022_23$value / 10
 # Creating  a new data set that only contains variables that can be seen before the game starts
 predicter_variables_2021_22 <- c("creativity", "ict_index", "influence", "selected", "threat", "transfers_in", "total_points")
 
-# Subset the data frame to keep only the selected variables
 adapted_merged_gameweek_2021_22 <- merged_gameweek_2021_22[, predicter_variables_2021_22]
 
 ```
 
 ### Creating the base random forests model
+
+In this section a base line random forests model will be created, once created an evaluation of the mean absolute error will be conducted. Following this, hyper parameter tuning will take place where the model will be adapted according to the results found from the hyper parameter tuning. Then the new tuned model will be run and the mean absolute error will be compared to that of the base line model. The model with the lowest mean absolute error will be used for the predictions made in the next section. 
+
+In setting up the base line model the 2021/22 premier league data will be split into a training set and a test set with a 70/30 split. The model will use repeated cross validation with 5 folds and repeated at each fold 3 times. Furthermore, the model will use 50 trees. This model is then run on the 2021/22 data set with the features being, creativity, ict_index, influence, threat, selected and transfers in and the target variable being "total points". The model is first trained using the training data set. The model then using what it has learnt from the training data set to create predictions on the test data set which it has not yet seen. Next the mean absolute error will be calculated using the yardstick method. 
 
 ```{r}
 # The baseline model
@@ -271,16 +293,23 @@ fpl_2021_22_prediction_train <- predict(fpl_2021_22_forest, twenty21_train)
 
 ### Evaluating the performance of the base line model
 
+Using the yardstick method to calculate the mean absolute error of the base line random forests model the following results are established. The mean absolute error when using the training data is 0.3231536 and when using the test data 0.6033058. These results imply that for the training set, the predicted total points are on average 0.3231536 points off the true total points value and 0.6033058 points off when the test data set is used. 
+
 ```{r}
 yardstick::mae_vec(truth = twenty21_train$total_points, estimate = fpl_2021_22_prediction_train)
 
 yardstick::mae_vec(truth =  twenty21_test$total_points, estimate = fpl_2021_22_prediction_test)
 ```
 
+Now hyper parameter tuning on the amount of folds in the cross validation, the value for mtry and the amount of trees will be conducted. Once conducted the new model will be run and the mean absolute error will be evaluated. 
 
 ## Hyper parameter tuning 
 
 ### mtry hyper parameter tuning
+
+Firstly, we will be tuning the mtry hyper parameter of the model. The tuning grid consists of (1, 2, 3, 4, 5). In the process of tuning this parameter the model will run 5 different times changing just the mtry value from 1 through 5. The model will then pick the mtry value which is associated with the lowest mean absolute error. 
+
+After completing the tuning process the mtry value of 2 is associated with the lowest mean absolute error. This mtry value is the same as the one used in the base line model and thus we do not need to change this parameter value. 
 
 ```{r}
 library(caret)
@@ -325,6 +354,10 @@ mae <- mae(twenty21_test$total_points, fpl_2021_22_prediction_test)
 
 ### k-fold Hyper parameter tuning
 
+Secondly, evaluating how many folds to be used in the cross validation process will be calculated. A fold range of (5, 10, 15, 20) will be evaluated. Thus, again the model will be run 4 different times with differing k-fold values in an attempt to find the most appropriate k value that results in the lowest mean absolute error. 
+
+After running through the range of k-fold values a k value of 5 is found to be the most optimal.Like that of the mtry parameter value, this is the same k-fold value that was used in the baseline model and thus, the base line model is yet to be adapted. 
+
 ```{r}
 library(caret)
 
@@ -361,7 +394,11 @@ optimal_fold <- fold_range[which.min(mae_values)]
 # Shows that k = 5 is the best 
 ```
 
-# ntree hyper parameter tuning 
+### ntree hyper parameter tuning 
+
+The last parameter value to be tuned is the amount of trees used in the random forests model. A tuning grid of (50, 100, 150) will be used. The model will run 3 times iterating through the different tree values and will look for the tree parameter that is associated with the lowest mean absolute error. 
+
+After running through the tuning grid of differing tree values, a tree value of 150 is found to create the lowest mean absolute error. This value of ntree = 150 differs from the base line model which used a ntree value of 50. Thus, the base line model needs to be adapted.  
 
 ```{r}
 # Create train control object for repeated cross-validation
@@ -415,6 +452,10 @@ for (ntree in c(50, 100, 150)) {
 
 ## Best model after hyper parameter tuning
 
+After conducting some hyper parameter tuning on the parameter of mtry, k-fold and ntree, the new tuned model is created. This model still splits the 2021/22 data into a training set ad a test set with a 70/30 split. This new random forests model uses repeated cross validation with 5 folds and is repeated three times at each fold and uses 150 trees. The model is trained using the training set and creates predictions on the test set which it has not yet seen. Once again the features are, creativity, ict_index, influence, threat, selected and transfers in and the target variable being "total points".
+
+After this model is run, the mean absolute error will be calculated and compared to that of the baseline model. 
+
 ```{r}
 set.seed(123)
 
@@ -433,75 +474,154 @@ fpl_2021_22_prediction_train_tuned <- predict(fpl_2021_22_forest_tuned, twenty21
 
 ## Evaluating the performance of the tuned model
 
+Using the yardstick method to obtain the mean absolute error of the tuned model we get the following results of 0.3210782 when the training data is used and 0.6019206 when the test data set is used. This means that on average when using the training data set the predicted total points value is off by 0.3210782 points and when using the test set the predicted values are off by 0.6019206 points. 
+
+When comparing these mean absolute error values to that of the once obtained in the base line model, the tuned model performs slightly better. With respect to the training data predictions the tuned model performs on average better than the base line model by 0.0020754 points and with respect to the predictions made on the test data, the tuned model performs on average better than the base line model by 0.0013852 points. Thus by increasing the amount of trees from 50 to 150 the model only improves slightly. This provides evidence that although increasing the amount of trees further than 150 may decrease the error it will not be worth the additional computational time. 
+
+Thus the tuned model will be used for the predictions that will be made in the following sections. 
+
 ```{r}
 yardstick::mae_vec(truth = twenty21_train$total_points, estimate = fpl_2021_22_prediction_train_tuned)
 
 yardstick::mae_vec(truth =  twenty21_test$total_points, estimate = fpl_2021_22_prediction_test_tuned)
 ```
 
+# The important restrictions to note when building your fantasy premier league team
+
+There are three important restrictions that need to be taken into account when building your fantasy premier league team. The first being that your are only allowed a maximum of three players per premier league team in your fantasy premier league team. Secondly, your total team cost cannot exceed 100 mil. Lastly, you need to pick which formation you want to play. This means that you have to have at least one goal keeper, between 3-5 defenders, between 3-5 midfielders, and between 1-3 forwards. Due to the analyses made in the data analysis section I will be choosing a formation that has as many midfielders as possible and seeing that you can get cheap defenders that can score lots of points I will be going for more defenders than strikers to keep the cost down. Thus the formation chosen for this project is 1 defender, 3 defenders, 5 midfielders and 2 strikers. 
+
+
 # Time for predictions
 
-## Preparing the 2022/23 data set to be ready for prediction 
-(Here i must explain what I am doing in the code below)
+## Predictions on the 2022/23 data set
+
+The new tuned random forests model is used to create predictions on the 2022/23 data set. Firstly, the 2022/23 data set must be cleaned to ensure that the 2022/22 and 2022/23 data sets contain the same variables. Once this was done, the predictions on the 2022/23 data set could commence. 
+
+Once predictions were made, this prediction variable is added back to the main data set so that we could extract variables such as the name of the player the actual points scored, the predicted points scored, what team they play for, which potion they play in and their value. 
+
 
 ```{r}
 # Preparing my 2022/23 data set so it is ready for predictions 
-#Creating  a new data set that only contains variables that can be seen before the game starts
-
+# Creating a data frame with the feature variables
 predicter_variables_2022_23 <- c("creativity", "ict_index", "influence", "selected", "threat", "transfers_in", "total_points", "team")
 
-# Subset the data frame to keep only the selected variables
 twenty22_test <- merged_gameweek_2022_23[, predicter_variables_2022_23]
 
-# Create a vector of the team names to be removed
+# Removinf three teams because they wernt in the previous data set. 
 teams_to_remove <- c("Bournemouth", "Nott'm Forest", "Fulham")
 
-# Remove the rows with the teams to be removed from twenty22_test
 twenty22_test <- twenty22_test[!twenty22_test$team %in% teams_to_remove, ]
 
 #remove these teams from the original dataset as well
 merged_gameweek_2022_23 <- merged_gameweek_2022_23[!merged_gameweek_2022_23$team %in% teams_to_remove, ]
 
-# Step 3: Make predictions using the trained random forest model
+#Lets make predictions
 predictions <- predict(fpl_2021_22_forest_tuned, newdata = twenty22_test)
 
-# make a vector with the names: 
+# create names vector
 names_22_23 <- merged_gameweek_2022_23$name
 
-#add names back to the twenty22_test dataset 
+#adding names vector back
 twenty22_test$names_22_23 <- names_22_23
 
-# Add the predictions to the twenty22_test dataset
+#Adding predictions back to data set
 twenty22_test$predicted_points <- predictions
 
-# Make a vector with game week 
+# Adding gameweek back 
 gameweek <- merged_gameweek_2022_23$GW
 
-# Add the gameweek back into the data set
 twenty22_test$gameweek <- gameweek
 
-# make a vector with the position 
+# Adding position back
 position <- merged_gameweek_2022_23$position
 
-# add the position back into the data set
+# adding posistion pack
 twenty22_test$position <- position
 
-# make a vector with value 
+# Adding value back
 value <- merged_gameweek_2022_23$value
 
-# add the value vector back into the data set
 twenty22_test$value <- value
 ```
 
 ## Game week predictions 
 
 
+### Beggining of the season predtions 
 
 
+#### Game week 9 predictions and actual best team 
 
+The following 11 players are apart of the predicted fantasy team for game week 9:
+```{r}
+predicted_best_team_GW9 <- select_best_team_with_value_captain(9)
+predicted_best_team_GW9
+# 9 out of 11 predicted correctly
+# Captains correctly predicted 
+```
+
+The following 11 players are apart of the actual best team for game week 9: 
+```{r}
+actual_best_team_GW9 <- actual_best_team(9)
+actual_best_team_GW9
+```
+
+In game week 9 the prediction model correctly predicted 9 out of the 11 players with a total of 149 points out of a maximum of 159 points obtained by the actual best team. 
+
+### Middle of the season predictions 
+
+#### Game week 16 predictions and actual best team 
+
+
+The following 11 players are apart of the predicted fantasy team for game week 16:
+```{r}
+predicted_best_team_GW16 <- select_best_team_with_value_captain(16)
+predicted_best_team_GW16
+
+# 7 out of 11 and captains predicted correctly
+```
+
+
+The following 11 players are apart of the actual best team for game week 16: 
+```{r}
+
+actual_best_team_GW16 <- actual_best_team(16)
+actual_best_team_GW16
+
+```
+
+In game week 16 the prediction model correctly predicted 7 out of the 11 players with a total of 114 points out of a maximum of 128 points obtained by the actual best team. 
+
+### End of the season predictions 
+
+
+#### Game week 35 predictions and actual best team
+
+
+The following 11 players are apart of the predicted fantasy team for game week 35:
+```{r}
+predicted_best_team_GW35 <- select_best_team_with_value_captain(35)
+predicted_best_team_GW35
+
+# 7 out of 11 correctly predicted and captains correctly predicted 
+```
+
+The following 11 players are apart of the actual best team for game week 35: 
+
+```{r}
+
+actual_best_team_GW35 <- actual_best_team(35)
+actual_best_team_GW35
+
+```
+
+In game week 35 the prediction model correctly predicted 7 out of the 11 players with a total of 113 points out of a maximum of 133 points obtained by the actual best team. 
 
 
 # Conclusion
+
+TO conclude, by using the above fantasy premier league prediction model I was able to predict up to 9 out of the 11 players that would make the best team of the week with on average 6/7 players correctly predicted. However, this model can be adapted if it were to actually be used for selecting a fantasy team throughout the season. This is because what this model can do is predict a brand new team each game week fairly well, which is not allowed in the actual fantasy game, since you can only make a few substitutions per week. 
+
 
 <!-- Make title of bibliography here: -->
 <!-- \newpage -->

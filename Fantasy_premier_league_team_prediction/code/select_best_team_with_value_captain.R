@@ -1,69 +1,69 @@
 select_best_team_with_value_captain <- function(gameweek_number) {
-    # Filter the dataset for the specified gameweek
+    # Filtering data set for game week
     gameweek_data <- twenty22_test[twenty22_test$gameweek == gameweek_number, ]
 
-    # Check if the dataset is empty for the given gameweek
+    # Checking if valid game week
     if (nrow(gameweek_data) == 0) {
-        message("No data available for gameweek ", gameweek_number)
+        message("No gameweek data available ", gameweek_number)
         return(NULL)
     }
 
-    # Sort the dataset by predicted points in descending order
+    # Sorting players by predicted points
     top_players <- gameweek_data[order(-gameweek_data$predicted_points), ]
 
-    # Create empty lists to store selected players and team/position counts
+    # Creating empty list
     selected_players <- list()
 
-    # Get the unique team and position levels from the top_players data
+    # Getting the team and postion of new player
     team_levels <- unique(top_players$team)
     position_levels <- unique(top_players$position)
 
-    # Initialize the team and position counts as empty tables with the required levels
+    # creating empty tables that will see if restrictions are not violated
     team_counts <- table(factor(levels = team_levels))
     position_counts <- table(factor(levels = position_levels))
 
-    # Define the required number of players per position
+    # telling r how many players are allowed per posistion
     required_positions <- c("GK" = 1, "DEF" = 3, "MID" = 5, "FWD" = 2)
 
-    # Define the maximum number of players allowed from each team
+    # telling r how many players are allowed per team
     max_players_per_team <- 3
 
-    # Define the maximum combined value allowed for the team
+    # telling r the maximum value of the entire team
     max_team_value <- 100
 
-    # Iterate through the top players and select the best team
+    # for loop to find the best players
     for (i in 1:nrow(top_players)) {
         player <- top_players[i, ]
 
-        # Check if adding the player violates any restrictions
+        # Checking restrictions are met and not violated
         if (team_counts[player$team] < max_players_per_team &&
             position_counts[player$position] < required_positions[player$position] &&
             sum(unlist(lapply(selected_players, function(x) x$value)), na.rm = TRUE) + player$value <= max_team_value) {
 
-            # Add the player to the selected players list
+            # updating the list
             selected_players[[length(selected_players) + 1]] <- player
 
-            # Update the team and position counts
+            # Updating the team counts
             team_counts[player$team] <- team_counts[player$team] + 1
             position_counts[player$position] <- position_counts[player$position] + 1
         }
 
-        # Check if 11 players have been selected or if all position requirements and team restrictions are met
+        # Checking if valid team is picked
         if (length(selected_players) == 11 || (all(position_counts >= required_positions) && all(team_counts <= max_players_per_team))) {
             break
         }
     }
 
-    # Check if no players were selected
+    # Checking if valid team is picked
     if (length(selected_players) == 0) {
-        message("No valid team can be selected for gameweek ", gameweek_number)
+        message("No team for game week, sorry. ", gameweek_number)
         return(NULL)
     }
 
-    # Convert the selected players list to a data frame
+    # creating new data frame
     selected_players_df <- do.call(rbind, selected_players)
 
-    # Call the select_captain function with the selected team as the input
+    # Calling select_captain function
     select_captain(selected_players_df)
 
     # Return the selected team
